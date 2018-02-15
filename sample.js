@@ -18,24 +18,40 @@
  * @transaction
  */
 function sendMessage(tx) {
-  
-      // Get the asset registry for the asset.
-      return getAssetRegistry('org.acme.sample.Message')
-          .then(function (assetRegistry) {
-  
-              // Update the asset in the asset registry.
-              return assetRegistry.update(tx.message);
-  
-          })
-          .then(function () {
-  
-              // Emit an event for the modified asset.
-              var event = getFactory().newEvent('org.acme.sample', 'ShowChat');
-              event.message = tx.message;
-            event.messageText = tx.message.value;
-              emit(event);
-  
-          });
-  
+  var NS = 'org.acme.sample';
+
+  if (tx.value.length <= 0) {
+    throw new Error('WHAT ARE YOU SAYING!?');
   }
-  
+
+  //first check if transaction user is a registered user
+  return getParticipantRegistry('org.acme.sample.User')
+    .then(function (participantRegistry) {
+      // Determine if the specific driver exists in the driver participant registry.
+      return participantRegistry.exists(tx.chatUser.facebookId);
+    })
+    .then(function (exists) {
+
+      if (exists) {
+        console.log('Driver exists');
+        var messageId = Math.random().toString(36).substring(3);
+
+        var message = getFactory().newResource(NS,
+          'Message', messageId);
+
+        message.value = tx.value;
+        message.chatUser = tx.chatUser;
+        message.messageId = messageId;
+
+        return getAssetRegistry('org.acme.sample.Message')
+
+          .then(function (messageAssetRegistry) {
+            return messageAssetRegistry.add(message);
+          });
+
+      } else {
+        throw new Error('HES AN IMPOSTOR!');
+      }
+    });
+
+}

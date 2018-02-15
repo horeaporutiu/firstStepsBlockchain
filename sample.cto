@@ -14,11 +14,12 @@ participant User identified by facebookId {
 }
 
 transaction SendMessage {
-  --> Message message
+  o String value
   --> User chatUser
 }
 
 event ShowChat {
   --> Message message
+  --> User chatUser
   o String messageText
 }
