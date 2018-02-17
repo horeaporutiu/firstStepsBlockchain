@@ -11,6 +11,7 @@ asset Message identified by messageId {
 
 participant User identified by facebookId {
   o String facebookId
+  o String [] messages
 }
 
 transaction SendMessage {
@@ -18,8 +19,13 @@ transaction SendMessage {
   --> User chatUser
 }
 
+transaction getUserMessages{
+  o String facebookId
+}
+
 event ShowChat {
-  --> Message message
   --> User chatUser
   o String messageText
+  o String messageId
+  o String [] messages
 }

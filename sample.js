@@ -19,39 +19,75 @@
  */
 function sendMessage(tx) {
   var NS = 'org.acme.sample';
-
+  
   if (tx.value.length <= 0) {
     throw new Error('WHAT ARE YOU SAYING!?');
   }
-
+  
   //first check if transaction user is a registered user
   return getParticipantRegistry('org.acme.sample.User')
-    .then(function (participantRegistry) {
-      // Determine if the specific driver exists in the driver participant registry.
-      return participantRegistry.exists(tx.chatUser.facebookId);
-    })
-    .then(function (exists) {
+  .then(function (participantRegistry) {
+    // Determine if the specific user exists in the participant registry.
+    return participantRegistry.exists(tx.chatUser.facebookId);
+  })
+  .then(function (exists) {
+    
+    if (exists) {
+        console.log('User exists');
+      var messageId = Math.random().toString(36).substring(3);
+      
+      var message = getFactory().newResource(NS,
+       'Message', messageId);
 
-      if (exists) {
-        console.log('Driver exists');
-        var messageId = Math.random().toString(36).substring(3);
-
-        var message = getFactory().newResource(NS,
-          'Message', messageId);
-
-        message.value = tx.value;
-        message.chatUser = tx.chatUser;
-        message.messageId = messageId;
-
-        return getAssetRegistry('org.acme.sample.Message')
-
-          .then(function (messageAssetRegistry) {
-            return messageAssetRegistry.add(message);
-          });
-
-      } else {
-        throw new Error('HES AN IMPOSTOR!');
+      message.value = tx.value;
+      message.chatUser = tx.chatUser;
+      message.messageId = messageId;
+      if(!message.chatUser.messages) {
+        message.chatUser.messages = [];
       }
-    });
+      //add messageId to array of messages for a user
+      message.chatUser.messages.push(messageId);
+      
+      
+      return getAssetRegistry('org.acme.sample.Message')
+        .then(function(messageAssetRegistry){
+          return messageAssetRegistry.add(message);
+        }).then(function(){
+      		return getParticipantRegistry('org.acme.sample.User')
+            .then(function (participantRegistry) {
+              return participantRegistry.update(tx.chatUser);
+            })
+      	})
+     
+   
 
+
+
+      // .then(function(){
+      //   return getAssetRegistry('org.acme.sample.Message')
+      //     .then(function(messageAssetRegistry){
+      //       return messageAssetRegistry.add(message);
+      //     })
+      // })
+      // .then(function(){
+      //   return getAssetRegistry('org.acme.sample.Message')        
+      //   .then(function(messageAssetRegistry){
+      //     return messageAssetRegistry.update(message);
+      //   });
+      // });
+      
+    } else {
+    	throw new Error('Shit! HES AN IMPOSTOR!');
+    }
+  })
+}
+/**
+ * Sample transaction processor function.
+ * @param {org.acme.sample.getUserMessages} facebookId The Id of the user that we want to get messages from.
+ * @transaction
+ */
+function getUserMessages(userId) {
+  
+  
+  
 }
