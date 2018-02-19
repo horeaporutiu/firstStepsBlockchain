@@ -38,10 +38,15 @@ function sendMessage(tx) {
       
       var message = getFactory().newResource(NS,
        'Message', messageId);
+      
+      var dateStr = new Date();
+      dateStr = dateStr.toString();
 
       message.value = tx.value;
       message.chatUser = tx.chatUser;
       message.messageId = messageId;
+      message.timeStamp = dateStr;
+      //What cost me hours on hours;
       if(!message.chatUser.messages) {
         message.chatUser.messages = [];
       }
@@ -58,26 +63,8 @@ function sendMessage(tx) {
               return participantRegistry.update(tx.chatUser);
             })
       	})
-     
-   
-
-
-
-      // .then(function(){
-      //   return getAssetRegistry('org.acme.sample.Message')
-      //     .then(function(messageAssetRegistry){
-      //       return messageAssetRegistry.add(message);
-      //     })
-      // })
-      // .then(function(){
-      //   return getAssetRegistry('org.acme.sample.Message')        
-      //   .then(function(messageAssetRegistry){
-      //     return messageAssetRegistry.update(message);
-      //   });
-      // });
-      
     } else {
-    	throw new Error('Shit! HES AN IMPOSTOR!');
+    	throw new Error('Oh no! HES AN IMPOSTOR!');
     }
   })
 }
@@ -86,8 +73,34 @@ function sendMessage(tx) {
  * @param {org.acme.sample.getUserMessages} facebookId The Id of the user that we want to get messages from.
  * @transaction
  */
+/**
+ * Sample transaction processor function.
+ * @param {org.acme.sample.getUserMessages} facebookId The Id of the user that we want to get messages from.
+ * @transaction
+ */
 function getUserMessages(userId) {
-  
-  
-  
+  var userRegistry = null;
+  return getParticipantRegistry('org.acme.sample.User')
+    .then(function (participantRegistry) {
+      // Determine if the specific user exists in the participant registry.
+      return participantRegistry.get(userId.facebookId);
+    }).then(function (user) {
+      userRegistry = user
+      return getAssetRegistry('org.acme.sample.Message');
+    }).then(function (messageRegistry) {
+      var promises = [];
+      for (var i = 0; i < userRegistry.messages.length; i++) {
+        var promise = messageRegistry.get(userRegistry.messages[i]).then(function (result) { return result.value })
+          .catch(function (err) {
+            throw err;
+          });
+        promises.push(promise);
+      }
+      return Promise.all(promises);
+    }).then(function (userMessages) {
+      var allMessages = getFactory().newEvent('org.acme.sample', 'ShowMessages');
+      allMessages.messages = userMessages;
+      emit(allMessages);
+      return userMessages
+    });
 }

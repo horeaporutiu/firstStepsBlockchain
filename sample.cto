@@ -29,3 +29,7 @@ event ShowChat {
   o String messageId
   o String [] messages
 }
+
+event ShowMessages {
+  o String messages
+}
